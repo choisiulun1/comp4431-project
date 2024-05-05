@@ -407,25 +407,30 @@
                     <div class="container-fluid">
                         <div class="row">
                             <div class="col-3">
-                                <label for="dither-input">Input:</label>
+                                <label for="errordither-input">Input:</label>
+                                <select class="custom-select" id="errordither-input">
+                                    <option value="original">Original Image</option>
+                                    <option value="processed">Processed Image</option>
+                                </select>
+
+
+
+                            </div>
+
+                            <div class="col-5">
+                                <label for="errordither-method">Methods:</label>
                                 <select class="custom-select" id="errordither-method">
                                     <option value="normal">Error Diffusion Dithering</option>
                                     <option value="floyd">Floyd-Steinberg Error Diffusion Dithering</option>
                                 </select>
                             </div>
+                        </div>
+                        <div class="row">
                             <div class="col-3">
-                                <label for="dither-matrix-type">Matrix type:</label>
-                                <select class="custom-select" id="errordither-matrix-type">
-                                    <option value="bayer2">Bayer's 2&times;2 Matrix</option>
-                                    <option value="bayer4">Bayer's 4&times;4 Matrix</option>
-                                    <option value="line">Diagonal Lines</option>
-                                    <option value="diamond">Diamonds</option>
-                                </select>
-                            </div>
-                            <div class="col-3">
-                                <label for="dither-transparent">White shown as transparent:</label>
+                                <label for="dither-transparent">Colored:</label>
                                 <div class="input-group">
-                                    <input class="form-control toggle-control" id="errordither-color" type="checkbox"/>
+                                    <input class="form-control toggle-control" id="errordither-color"
+                                           type="checkbox"/>
                                 </div>
                             </div>
                             <div class="col-3">
@@ -443,7 +448,6 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Sobel edge -->
                 <div class="tab-pane" id="sobel">
                     <div class="container-fluid">

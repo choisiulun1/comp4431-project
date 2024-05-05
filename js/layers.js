@@ -1,4 +1,4 @@
-(function(imageproc) {
+(function (imageproc) {
     "use strict";
 
     /*
@@ -90,7 +90,27 @@
                 if ($("#dither-input").val() == "processed")
                     inputImage = processedImage;
                 imageproc.dither(inputImage, outputImage,
-                                 $("#dither-matrix-type").val());
+                    $("#dither-matrix-type").val());
+                break;
+            case "errordither":
+                var type;
+                var color;
+                if($("#errordither-input").val() == "processed")
+                    inputImage = processedImage;
+                if ($("#errordither-method").val() === "normal") {
+                    type = "normal";
+                } else {
+                    type = "floyd";
+                }
+                //errordither-color is a checkbox
+                if ($("#errordither-color").prop("checked")) {
+                    color = "color";
+                } else {
+                    color = "gray";
+                }
+                var time = imageproc.measureExecutionTime(imageproc.errorDither, inputImage, outputImage, type, color);
+                // find the time-used id text and set the time , round it to 2 decimal places
+                $("#time-used").text(time.toFixed(2) + "ms");
                 break;
         }
     }
@@ -122,16 +142,15 @@
 
                 // Flip edge values
                 if ($("#sobel-flip").prop("checked")) {
-                    for (var i = 0; i < outputImage.data.length; i+=4) {
+                    for (var i = 0; i < outputImage.data.length; i += 4) {
                         if (outputImage.data[i] == 0) {
-                            outputImage.data[i]     =
-                            outputImage.data[i + 1] =
-                            outputImage.data[i + 2] = 255;
-                        }
-                        else {
-                            outputImage.data[i]     =
-                            outputImage.data[i + 1] =
-                            outputImage.data[i + 2] = 0;
+                            outputImage.data[i] =
+                                outputImage.data[i + 1] =
+                                    outputImage.data[i + 2] = 255;
+                        } else {
+                            outputImage.data[i] =
+                                outputImage.data[i + 1] =
+                                    outputImage.data[i + 2] = 0;
                         }
                     }
                 }
@@ -144,7 +163,7 @@
      * Operations are applied from the base layer to the outline layer. These
      * layers are combined appropriately when required.
      */
-    imageproc.operation = function(inputImage, outputImage) {
+    imageproc.operation = function (inputImage, outputImage) {
         // Apply the basic processing operations
         var processedImage = inputImage;
         if (currentBasicOp != "no-op") {
@@ -168,18 +187,18 @@
             // Show base layer for dithering
             if (currentShadeLayerOp == "dither" &&
                 $("#dither-transparent").prop("checked")) {
-                    for (var i = 0; i < shadeLayer.data.length; i+=4) {
-                        var l = shadeLayer.data[i]+shadeLayer.data[i+1]+shadeLayer.data[i+2];
-                        l=l/3;
-                        if(l==255){
-                            for(var j=0;j<4;j++){
-                                shadeLayer.data[i+j]=baseLayer.data[i+j];
-                            }
+                for (var i = 0; i < shadeLayer.data.length; i += 4) {
+                    var l = shadeLayer.data[i] + shadeLayer.data[i + 1] + shadeLayer.data[i + 2];
+                    l = l / 3;
+                    if (l == 255) {
+                        for (var j = 0; j < 4; j++) {
+                            shadeLayer.data[i + j] = baseLayer.data[i + j];
                         }
-                        
-                        
                     }
-                    
+
+
+                }
+
             }
         }
 
@@ -192,20 +211,20 @@
             // Show shade layer for non-edge pixels
             if (currentOutlineLayerOp == "sobel" &&
                 $("#sobel-transparent").prop("checked")) {
-                    var flip = $("#sobel-flip").prop("checked");
-                    console.log(flip?0:255);
-                    for (var i = 0; i < outlineLayer.data.length; i+=4) {
-                        var l = outlineLayer.data[i]+outlineLayer.data[i+1]+outlineLayer.data[i+2];
-                        l=l/3;
-                        if(l!=(flip?0:255)){
-                            for(var j=0;j<4;j++){
-                                outlineLayer.data[i+j]=shadeLayer.data[i+j];
-                            }
+                var flip = $("#sobel-flip").prop("checked");
+                console.log(flip ? 0 : 255);
+                for (var i = 0; i < outlineLayer.data.length; i += 4) {
+                    var l = outlineLayer.data[i] + outlineLayer.data[i + 1] + outlineLayer.data[i + 2];
+                    l = l / 3;
+                    if (l != (flip ? 0 : 255)) {
+                        for (var j = 0; j < 4; j++) {
+                            outlineLayer.data[i + j] = shadeLayer.data[i + j];
                         }
-                        
-                        
                     }
-                    console.log("123")
+
+
+                }
+                console.log("123")
                 /**
                  * TODO: You need to show the shade layer (shadeLayer) for
                  * the non-edge pixels (transparent)
@@ -217,5 +236,5 @@
         // Show the accumulated image
         imageproc.copyImageData(outlineLayer, outputImage);
     }
- 
+
 }(window.imageproc = window.imageproc || {}));
