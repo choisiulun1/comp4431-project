@@ -1,4 +1,4 @@
-(function(imageproc) {
+(function (imageproc) {
     "use strict";
 
     /*
@@ -90,8 +90,29 @@
                 if ($("#dither-input").val() == "processed")
                     inputImage = processedImage;
                 imageproc.dither(inputImage, outputImage,
-                                 $("#dither-matrix-type").val());
+                    $("#dither-matrix-type").val());
                 break;
+            case "errordither":
+                var type;
+                var color;
+                if($("#errordither-method").val() === "normal") {
+                    type = "normal";
+                }else{
+                    type = "floyd";
+                }
+                //errordither-color is a checkbox
+                if($("#errordither-color").prop("checked")) {
+                    color = "color";
+                }
+                else{
+                    color = "gray";
+                }
+                var time =imageproc.measureExecutionTime(imageproc.errorDither,inputImage, outputImage,type,color);
+                // find the time-used id text and set the time , round it to 2 decimal places
+                $("#time-used").text(time.toFixed(2) + "ms");
+                break;
+
+
         }
     }
 
@@ -122,16 +143,15 @@
 
                 // Flip edge values
                 if ($("#sobel-flip").prop("checked")) {
-                    for (var i = 0; i < outputImage.data.length; i+=4) {
+                    for (var i = 0; i < outputImage.data.length; i += 4) {
                         if (outputImage.data[i] == 0) {
-                            outputImage.data[i]     =
-                            outputImage.data[i + 1] =
-                            outputImage.data[i + 2] = 255;
-                        }
-                        else {
-                            outputImage.data[i]     =
-                            outputImage.data[i + 1] =
-                            outputImage.data[i + 2] = 0;
+                            outputImage.data[i] =
+                                outputImage.data[i + 1] =
+                                    outputImage.data[i + 2] = 255;
+                        } else {
+                            outputImage.data[i] =
+                                outputImage.data[i + 1] =
+                                    outputImage.data[i + 2] = 0;
                         }
                     }
                 }
@@ -144,7 +164,7 @@
      * Operations are applied from the base layer to the outline layer. These
      * layers are combined appropriately when required.
      */
-    imageproc.operation = function(inputImage, outputImage) {
+    imageproc.operation = function (inputImage, outputImage) {
         // Apply the basic processing operations
         var processedImage = inputImage;
         if (currentBasicOp != "no-op") {
@@ -198,5 +218,5 @@
         // Show the accumulated image
         imageproc.copyImageData(outlineLayer, outputImage);
     }
- 
+
 }(window.imageproc = window.imageproc || {}));

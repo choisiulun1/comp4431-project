@@ -100,6 +100,7 @@
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="#no-op"><i>Do Nothing</i></a></li>
                             <li><a class="dropdown-item" href="#dither">Ordered Dithering</a></li>
+                            <li><a class="dropdown-item" href="#errordither">Error Dithering</a></li>
                         </ul>
                     </li>
 
@@ -355,6 +356,43 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="tab-pane" id="errordither">
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div class="col-3">
+                                    <label for="dither-input">Input:</label>
+                                    <select class="custom-select" id="errordither-method">
+                                        <option value="normal">Error Diffusion Dithering</option>
+                                        <option value="floyd">Floyd-Steinberg Error Diffusion Dithering</option>
+                                    </select>
+                                </div>
+                                <div class="col-3">
+                                    <label for="dither-matrix-type">Matrix type:</label>
+                                    <select class="custom-select" id="errordither-matrix-type">
+                                        <option value="bayer2">Bayer's 2&times;2 Matrix</option>
+                                        <option value="bayer4">Bayer's 4&times;4 Matrix</option>
+                                        <option value="line">Diagonal Lines</option>
+                                        <option value="diamond">Diamonds</option>
+                                    </select>
+                                </div>
+                                <div class="col-3">
+                                    <label for="dither-transparent">White shown as transparent:</label>
+                                    <div class="input-group">
+                                        <input class="form-control toggle-control" id="errordither-color" type="checkbox" />
+                                    </div>
+                                </div>
+                                <div class="col-3">
+<!--                                    write a label text for showing the time used to calculate-->
+                                    <label for="time-used">Time used:</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text" id="time-used">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
 
                     <!-- Sobel edge -->
                     <div class="tab-pane" id="sobel">
