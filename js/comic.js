@@ -69,12 +69,27 @@
         [  0,   0,   0],
         [255, 255, 255],
     ];
-
+     function findClosestPaletteColor(r, g, b) {
+        var closestColor = palette[0];
+        var smallestDistance = Infinity;
+        palette.forEach(function(color) {
+            var distance = Math.sqrt(
+                Math.pow(color[0] - r, 2) +
+                Math.pow(color[1] - g, 2) +
+                Math.pow(color[2] - b, 2)
+            );
+            if (distance < smallestDistance) {
+                closestColor = color;
+                smallestDistance = distance;
+            }
+        });
+        return closestColor;
+    }
     /*
      * Convert the colours in the input data to comic colours
      */
     imageproc.comicColor = function(inputData, outputData, saturation) {
-        console.log("Applying comic color...");
+        console.log("Applying comic color...?");
 
         /*
          * TODO: You need to complete the comic colour function so that
@@ -85,6 +100,9 @@
             var r = inputData.data[i];
             var g = inputData.data[i + 1];
             var b = inputData.data[i + 2];
+            var hsv = imageproc.fromRGBToHSV(r, g, b);
+            hsv.s *= saturation; 
+            hsv.s = Math.min(1, Math.max(0, hsv.s));
 
             // First, you convert the colour to HSL
             // then, increase the saturation by the saturation factor
@@ -95,9 +113,14 @@
             // from the comic colour palette
             // This is done by finding the minimum distance between the colours
 
-            outputData.data[i]     = r;
-            outputData.data[i + 1] = g;
-            outputData.data[i + 2] = b;
+             var rgbAdjusted = imageproc.fromHSVToRGB(hsv.h, hsv.s, hsv.v);
+            
+            // Find the closest palette color
+            var closestColor = findClosestPaletteColor(rgbAdjusted.r, rgbAdjusted.g, rgbAdjusted.b);
+            outputData.data[i] = closestColor[0];
+            outputData.data[i + 1] = closestColor[1];
+            outputData.data[i + 2] = closestColor[2];
+
         }
     }
  
