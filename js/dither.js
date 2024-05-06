@@ -106,7 +106,9 @@
 
         return intensityError;
     };
-
+    imageproc.bound = function (val,min,max){
+        return Math.max(min,Math.min(val,max));
+    }
     imageproc.errorDither = function (inputData, outputData, type, color) {
         console.log(type, color);
         var threshold = 128;
@@ -115,7 +117,7 @@
         var r = 0, g = 0, b = 0;
         var pixel, index;
         if (type === "normal" && color === "gray") {
-
+            console.log("normal gray");
 
             for (var i = 0; i < inputData.width; i++) {
                 for (var j = 0; j < inputData.height; j++) {
@@ -148,6 +150,21 @@
         }
 
         // Helper function to distribute the error to neighboring pixels
+        function distributeError2(x, y, dr, dg, db, coeff) {
+            var nx = x;
+            var ny = y;
+            if (nx > inputData.width) {
+                ny++;
+                nx = 0;
+            }
+            if (nx >= 0 && nx < inputData.width && ny >= 0 && ny < inputData.height) {
+                var nindex = (nx + ny * outputData.width) * 4;
+                outputData.data[nindex] = Math.min(255, Math.max(0, outputData.data[nindex] + dr * coeff / 16));
+                outputData.data[nindex + 1] = Math.min(255, Math.max(0, outputData.data[nindex + 1] + dg * coeff / 16));
+                outputData.data[nindex + 2] = Math.min(255, Math.max(0, outputData.data[nindex + 2] + db * coeff / 16));
+            }
+        }
+
         function distributeError(x, y, dr, dg, db, coeff) {
             var nx = x;
             var ny = y;
@@ -159,34 +176,99 @@
             }
         }
 
+        if (type === "normal" && color === "color") {
+            var rBits = parseInt($("#error-red-bits").val());
+            var gBits = parseInt($("#error-green-bits").val());
+            var bBits = parseInt($("#error-blue-bits").val());
+
+            for (var i = 0; i < inputData.data.length; i++) {
+                outputData.data[i] = inputData.data[i];
+            }
+
+            for (var y = 0; y < inputData.height; y++) {
+                for (var x = 0; x < inputData.width; x++) {
+                    var index = (x + y * outputData.width) * 4;
+                    var pixel = imageproc.getPixel(outputData, x, y);
+
+                    // Posterize each color channel
+                    var oldR = pixel.r;
+                    var oldG = pixel.g;
+                    var oldB = pixel.b;
+                    var newR = posterizeChannel(oldR, rBits);
+                    var newG = posterizeChannel(oldG, gBits);
+                    var newB = posterizeChannel(oldB, bBits);
+
+                    // Set the pixel value to the posterized color
+                    outputData.data[index] = newR;
+                    outputData.data[index + 1] = newG;
+                    outputData.data[index + 2] = newB;
+                    outputData.data[index + 3] = 255;
+
+                    // Calculate errors
+                    var errorR = oldR - newR;
+                    var errorG = oldG - newG;
+                    var errorB = oldB - newB;
+
+                    // Distribute the error to next pixels
+                    distributeError2(x + 1, y, errorR, errorG, errorB, 16);
+                }
+            }
+        }
         if (type === "floyd" && color === "gray") {
-            var errorMatrix = [[0, 0, 7], [3, 5, 1]];
+            console.log("floyd gray");
+
+            // Copy input data to output data (shallow copy)
+            for (var i = 0; i < inputData.data.length; i++) {
+                outputData.data[i] = inputData.data[i];
+            }
+
+            // Floyd-Steinberg error diffusion matrix
+            var errorMatrix = [
+                [0, 0, 7],
+                [3, 5, 1]
+            ];
+            var threshold = 128; // You can adjust this value as needed
+
             for (var i = 0; i < inputData.width; i++) {
                 for (var j = 0; j < inputData.height; j++) {
-                    pixel = imageproc.getPixel(inputData, i, j);
-                    index = (i + j * outputData.width) * 4;
-                    r = pixel.r + error;
-                    g = pixel.g + error;
-                    b = pixel.b + error;
-                    intensity = (r + g + b) / 3;
+                    var index = (i + j * outputData.width) * 4;
+                    var pixel = {
+                        r: outputData.data[index],
+                        g: outputData.data[index + 1],
+                        b: outputData.data[index + 2]
+                    };
+
+                    // Compute grayscale intensity
+                    var intensity = (pixel.r + pixel.g + pixel.b) / 3;
+                    var error = 0;
+
+                    // Apply thresholding
                     if (intensity > threshold) {
-                        r = g = b = 255;
+                        pixel.r = pixel.g = pixel.b = 255;
                         error = intensity - 255;
                     } else {
-                        r = g = b = 0;
+                        pixel.r = pixel.g = pixel.b = 0;
                         error = intensity;
                     }
-                    outputData.data[index] = r;
-                    outputData.data[index + 1] = g;
-                    outputData.data[index + 2] = b;
-                    outputData.data[index + 3] = 255;
+
+                    // Update the pixel
+                    outputData.data[index] = pixel.r;
+                    outputData.data[index + 1] = pixel.g;
+                    outputData.data[index + 2] = pixel.b;
+                    outputData.data[index + 3] = 255; // Alpha channel
+
+                    // Distribute error using the Floyd-Steinberg matrix
                     for (var k = 0; k < 2; k++) {
                         for (var l = 0; l < 3; l++) {
-                            if (i + l < inputData.width && j + k < inputData.height) {
-                                const index2 = (i + l + (j + k) * outputData.width) * 4;
-                                outputData.data[index2] += errorMatrix[k][l] * error / 16;
-                                outputData.data[index2 + 1] += errorMatrix[k][l] * error / 16;
-                                outputData.data[index2 + 2] += errorMatrix[k][l] * error / 16;
+                            var x = i + l - 1;
+                            var y = j + k;
+
+                            if (x >= 0 && x < inputData.width && y < inputData.height) {
+                                var index2 = (x + y * inputData.width) * 4;
+
+                                outputData.data[index2] = outputData.data[index2] + errorMatrix[k][l] * error / 16;
+                                outputData.data[index2 + 1] = outputData.data[index2] + errorMatrix[k][l] * error / 16;
+                                outputData.data[index2 + 2] = outputData.data[index2] + errorMatrix[k][l] * error / 16;
                             }
                         }
                     }
@@ -196,9 +278,9 @@
         if (type === "floyd" && color === "color") {
             // Floyd-Steinberg dithering in 8-bit colors
             //get the bits from id:posterization-{color}-bits
-            var rBits=parseInt($("#error-red-bits").val());
-            var gBits=parseInt($("#error-green-bits").val());
-            var bBits=parseInt($("#error-blue-bits").val());
+            var rBits = parseInt($("#error-red-bits").val());
+            var gBits = parseInt($("#error-green-bits").val());
+            var bBits = parseInt($("#error-blue-bits").val());
 
             for (var i = 0; i < inputData.data.length; i++) {
                 outputData.data[i] = inputData.data[i];
@@ -239,102 +321,103 @@
 
     }
     imageproc.errorDitherMultiThread = async function (inputData, outputData, type, color) {
-            console.log("multithreading");
-            var rBits = parseInt($("#error-red-bits").val());
-            var gBits = parseInt($("#error-green-bits").val());
-            var bBits = parseInt($("#error-blue-bits").val());
+        console.log("multithreading");
+        var rBits = parseInt($("#error-red-bits").val());
+        var gBits = parseInt($("#error-green-bits").val());
+        var bBits = parseInt($("#error-blue-bits").val());
+        //get errordither-thread's value
+        var numWorkers =  parseInt($("#errordither-thread").val());
+        const worker = [];
+        function createWorkers(numWorkers, workerScript, callback) {
+            var workers = [];
+            var results = new Array(numWorkers).fill(null); // Initialize results with nulls
+            var remaining = numWorkers;
 
-            var numWorkers = 4;
-
-            function createWorkers(numWorkers, workerScript, callback) {
-                var workers = [];
-                var results = new Array(numWorkers).fill(null); // Initialize results with nulls
-                var remaining = numWorkers;
-
-                for (let i = 0; i < numWorkers; i++) {
-                    workers[i] = new Worker(workerScript);
-
-                    workers[i].onmessage = function (e) {
-                        results[e.data.index] = new Uint8ClampedArray(e.data.result);
-                        remaining--;
-                        if (remaining === 0) {
-                            callback(results);
-                        }
-                    };
-                }
-
-                return workers;
-            }
-
-            // Divide input data into chunks
-            function divideImageData(data, width, height, numParts) {
-                var parts = [];
-                var partHeight = Math.ceil(height / numParts);
-
-                for (var i = 0; i < numParts; i++) {
-                    var start = i * partHeight * width * 4;
-                    var end = Math.min((i + 1) * partHeight * width * 4, data.length);
-                    parts.push(data.slice(start, end));
-                }
-
-                return parts;
-            }
-
-            function mergeImageData(chunks, outputData, width, height, partHeight) {
-                for (var i = 0; i < chunks.length; i++) {
-
-                    var chunk = chunks[i];
-                    var startY = i * partHeight;
-                    var offset = startY * width * 4;
-                    for (var j = 0; j < chunk.length; j++) {
-                        outputData[offset + j] = chunk[j];
+            for (let i = 0; i < numWorkers; i++) {
+                workers[i] = new Worker(workerScript);
+                workers.push(workers[i]);
+                workers[i].onmessage = function (e) {
+                    results[e.data.index] = new Uint8ClampedArray(e.data.result);
+                    remaining--;
+                    if (remaining === 0) {
+                        callback(results);
                     }
-                }
+                };
             }
 
-            // Wrap callback-based worker handling into a Promise
-            function runWorkersWithPromise(numWorkers, workerScript, parts, rBits, gBits, bBits, width, partHeight) {
-                return new Promise((resolve) => {
-                    var workers = createWorkers(numWorkers, workerScript, function (results) {
-                        resolve(results);
-                    });
+            return workers;
+        }
 
-                    // Send work to each worker
-                    for (var i = 0; i < numWorkers; i++) {
-                        workers[i].postMessage({
-                            index: i,
-                            inputData: {
-                                data: parts[i],
-                                width: width,
-                                height: partHeight
-                            },
-                            rBits, gBits, bBits,type,color
-                        });
-                    }
+        // Divide input data into chunks
+        function divideImageData(data, width, height, numParts) {
+            var parts = [];
+            var partHeight = Math.ceil(height / numParts);
+
+            for (var i = 0; i < numParts; i++) {
+                var start = i * partHeight * width * 4;
+                var end = Math.min((i + 1) * partHeight * width * 4, data.length);
+                parts.push(data.slice(start, end));
+            }
+
+            return parts;
+        }
+
+        function mergeImageData(chunks, outputData, width, height, partHeight) {
+            for (var i = 0; i < chunks.length; i++) {
+
+                var chunk = chunks[i];
+                var startY = i * partHeight;
+                var offset = startY * width * 4;
+                for (var j = 0; j < chunk.length; j++) {
+                    outputData[offset + j] = chunk[j];
+                }
+            }
+        }
+
+        // Wrap callback-based worker handling into a Promise
+        function runWorkersWithPromise(numWorkers, workerScript, parts, rBits, gBits, bBits, width, partHeight) {
+            return new Promise((resolve) => {
+                var workers = createWorkers(numWorkers, workerScript, function (results) {
+                    resolve(results);
                 });
-            }
 
-            for (var i = 0; i < inputData.data.length; i++) {
-                outputData.data[i] = inputData.data[i];
-            }
+                // Send work to each worker
+                for (var i = 0; i < numWorkers; i++) {
+                    workers[i].postMessage({
+                        index: i,
+                        inputData: {
+                            data: parts[i],
+                            width: width,
+                            height: partHeight
+                        },
+                        rBits, gBits, bBits, type, color
+                    });
+                }
+            });
+        }
 
-            // Divide the input data
-            var partHeight = Math.ceil(inputData.height / numWorkers);
-            var parts = divideImageData(inputData.data, inputData.width, inputData.height, numWorkers);
+        for (var i = 0; i < inputData.data.length; i++) {
+            outputData.data[i] = inputData.data[i];
+        }
 
-            // Run workers and wait for them to finish
-            var results = await runWorkersWithPromise(
-                numWorkers,
-                './js/worker.js',
-                parts,
-                rBits,
-                gBits,
-                bBits,
-                inputData.width,
-                partHeight
-            );
+        // Divide the input data
+        var partHeight = Math.ceil(inputData.height / numWorkers);
+        var parts = divideImageData(inputData.data, inputData.width, inputData.height, numWorkers);
 
-            mergeImageData(results, outputData.data, inputData.width, inputData.height, partHeight);
+        // Run workers and wait for them to finish
+        var results = await runWorkersWithPromise(
+            numWorkers,
+            './js/worker.js',
+            parts,
+            rBits,
+            gBits,
+            bBits,
+            inputData.width,
+            partHeight
+        );
+
+        mergeImageData(results, outputData.data, inputData.width, inputData.height, partHeight);
+
     };
 
 }(window.imageproc = window.imageproc || {}));

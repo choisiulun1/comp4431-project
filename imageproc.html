@@ -446,6 +446,17 @@
                                            type="checkbox"/>
                                 </div>
                             </div>
+                            <div class="col-3">
+                                <label for="errordither-thread">Threads:</label>
+                                <div class="input-group">
+                                    <div class="row flex-fill align-items-center mx-0 px-2 border rounded-left">
+                                        <input class="custom-range" id="errordither-thread" type="range" value="1"
+                                               min="1" max="8" step="1"
+                                               oninput="$(this).parents('.input-group').find('.input-group-text').html($(this).val() + ' threads')">
+                                    </div>
+                                    <div class="input-group-append"><span class="input-group-text">1 threads</span></div>
+                                </div>
+                            </div>
                         </div>
                         <div class="row">
                             <div class="col-3">
