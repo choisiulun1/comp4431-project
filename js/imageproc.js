@@ -34,23 +34,21 @@
      * Apply an image processing operation to an input image and
      * then put the output image in the output canvas
      */
-    imageproc.apply = function() {
+    imageproc.apply = async function () {
         // Get the input image and create the output image buffer
         var inputImage = input.getImageData(0, 0,
-                         input.canvas.clientWidth, input.canvas.clientHeight);
+            input.canvas.clientWidth, input.canvas.clientHeight);
         var outputImage = output.createImageData(input.canvas.clientWidth,
-                                                 input.canvas.clientHeight);
+            input.canvas.clientHeight);
 
         // Update the alpha values of the newly created image
-        for (var i = 0; i < outputImage.data.length; i+=4)
+        for (var i = 0; i < outputImage.data.length; i += 4)
             outputImage.data[i + 3] = 255;
 
         if (imageproc.operation) {
-            // Apply the operation
-            imageproc.operation(inputImage, outputImage);
+            await imageproc.operation(inputImage, outputImage);
         }
 
-        // Put the output image in the canvas
         output.putImageData(outputImage, 0, 0);
     }
 

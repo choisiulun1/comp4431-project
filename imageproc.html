@@ -440,9 +440,45 @@
                                 </div>
                             </div>
                             <div class="col-3">
-                                <label for="intensity-error"> Intensity error:</label>
+                                <label for="errordither-multi">multithreading</label>
                                 <div class="input-group">
-                                    <span class="input-group-text" id="intensity-error">0</span>
+                                    <input class="form-control toggle-control" id="errordither-multi"
+                                           type="checkbox"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-3">
+                                <label for="error-red-bits">Red bits (to keep):</label>
+                                <div class="input-group">
+                                    <div class="row flex-fill align-items-center mx-0 px-2 border rounded-left">
+                                        <input class="custom-range" id="error-red-bits" type="range" value="2"
+                                               min="1" max="8" step="1"
+                                               oninput="$(this).parents('.input-group').find('.input-group-text').html($(this).val() + ' bits')">
+                                    </div>
+                                    <div class="input-group-append"><span class="input-group-text">2 bits</span></div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <label for="error-green-bits">Green bits (to keep):</label>
+                                <div class="input-group">
+                                    <div class="row flex-fill align-items-center mx-0 px-2 border rounded-left">
+                                        <input class="custom-range" id="error-green-bits" type="range" value="2"
+                                               min="1" max="8" step="1"
+                                               oninput="$(this).parents('.input-group').find('.input-group-text').html($(this).val() + ' bits')">
+                                    </div>
+                                    <div class="input-group-append"><span class="input-group-text">2 bits</span></div>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <label for="error-blue-bits">Blue bits (to keep):</label>
+                                <div class="input-group">
+                                    <div class="row flex-fill align-items-center mx-0 px-2 border rounded-left">
+                                        <input class="custom-range" id="error-blue-bits" type="range" value="2"
+                                               min="1" max="8" step="1"
+                                               oninput="$(this).parents('.input-group').find('.input-group-text').html($(this).val() + ' bits')">
+                                    </div>
+                                    <div class="input-group-append"><span class="input-group-text">2 bits</span></div>
                                 </div>
                             </div>
                         </div>

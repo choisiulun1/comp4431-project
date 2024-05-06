@@ -83,7 +83,7 @@
     /*
      * Apply the shade layer operations
      */
-    function applyShadeLayerOp(inputImage, processedImage, outputImage) {
+    async function applyShadeLayerOp(inputImage, processedImage, outputImage) {
         switch (currentShadeLayerOp) {
             // Apply dither
             case "dither":
@@ -92,24 +92,40 @@
                 imageproc.dither(inputImage, outputImage,
                     $("#dither-matrix-type").val());
                 break;
+
             case "errordither":
                 var type;
                 var color;
-                if($("#errordither-input").val() == "processed")
+                if ($("#errordither-input").val() == "processed")
                     inputImage = processedImage;
                 if ($("#errordither-method").val() === "normal") {
                     type = "normal";
                 } else {
                     type = "floyd";
                 }
-                //errordither-color is a checkbox
+
+                // errordither-color is a checkbox
                 if ($("#errordither-color").prop("checked")) {
                     color = "color";
                 } else {
                     color = "gray";
                 }
-                var time = imageproc.measureExecutionTime(imageproc.errorDither, inputImage, outputImage, type, color);
-                // find the time-used id text and set the time , round it to 2 decimal places
+
+                var time = 0;
+                if ($("#errordither-multi").prop("checked")) {
+                    time = await imageproc.measureExecutionTime(
+                        async function () {
+                            await imageproc.errorDitherMultiThread(inputImage, outputImage, type, color);
+                        }
+                    );
+                } else {
+                    time = await imageproc.measureExecutionTime(
+                        imageproc.errorDither,
+                        inputImage, outputImage, type, color
+                    );
+                }
+
+                // Find the time-used id text and set the time, round it to 2 decimal places
                 $("#time-used").text(time.toFixed(2) + "ms");
                 break;
         }
@@ -163,7 +179,7 @@
      * Operations are applied from the base layer to the outline layer. These
      * layers are combined appropriately when required.
      */
-    imageproc.operation = function (inputImage, outputImage) {
+    imageproc.operation = async function (inputImage, outputImage) {
         // Apply the basic processing operations
         var processedImage = inputImage;
         if (currentBasicOp != "no-op") {
@@ -182,7 +198,7 @@
         var shadeLayer = baseLayer;
         if (currentShadeLayerOp != "no-op") {
             shadeLayer = imageproc.createBuffer(outputImage);
-            applyShadeLayerOp(inputImage, processedImage, shadeLayer);
+            await applyShadeLayerOp(inputImage, processedImage, shadeLayer);
 
             // Show base layer for dithering
             if (currentShadeLayerOp == "dither" &&
@@ -224,7 +240,6 @@
 
 
                 }
-                console.log("123")
                 /**
                  * TODO: You need to show the shade layer (shadeLayer) for
                  * the non-edge pixels (transparent)
